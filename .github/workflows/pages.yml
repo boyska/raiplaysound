@@ -9,7 +9,9 @@ name: Deploy this website to github pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["master", "automate"]
+    branches: ["master"]
+  schedule:
+    - cron: '15 4 * * *'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
