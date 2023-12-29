@@ -4,6 +4,8 @@ from itertools import chain
 from os.path import join as pathjoin
 from typing import List, Optional
 from urllib.parse import urljoin
+import enum
+import functools
 
 import requests
 from feedendum import to_rss_string, Feed, FeedItem
@@ -31,6 +33,27 @@ def _datetime_parser(s: str) -> Optional[dt]:
     except ValueError:
         pass
     return None
+
+
+class PageTypes(enum.IntFlag):
+    """
+    Given the current code, any page can only belong to a single category. But let's be generic.
+    """
+    GENERE = enum.auto()
+    PROGRAMMA = enum.auto()
+    FILM = enum.auto()
+
+    @classmethod
+    def from_string(cls, typology: str):
+        ret = cls.GENERE & 0  # That's zero
+
+        if typology in ("film", "fiction"):
+            ret |= cls.FILM
+        elif typology in ("programmi radio", "informazione notiziari"):
+            ret |= cls.PROGRAMMA
+        else:
+            ret |= cls.GENERE
+        return ret
 
 
 class RaiParser:
@@ -108,7 +131,11 @@ class RaiParser:
                 fitem._data[f"{NSITUNES}episode"] = item["episode"]
             feed.items.append(fitem)
 
-    def process(self, skip_programmi=True, skip_film=True, date_ok=False) -> List[Feed]:
+    def process(self, types: str='GENERE', date_ok=False) -> List[Feed]:
+        wanted_types = functools.reduce(
+                lambda x,y : x|y,
+                (PageTypes[x] for x in types.split()))
+
         result = requests.get(self.url + ".json")
         try:
             result.raise_for_status()
@@ -117,11 +144,9 @@ class RaiParser:
             return self.inner
         rdata = result.json()
         typology = rdata["podcast_info"].get("typology", "").lower()
-        if skip_programmi and (typology in ("programmi radio", "informazione notiziari")):
-            print(f"Skipped programmi: {self.url} ({typology})")
-            return []
-        if skip_film and (typology in ("film", "fiction")):
-            print(f"Skipped film: {self.url} ({typology})")
+        pagetype = PageTypes.from_string(typology)
+        if not pagetype & wanted_types:
+            print(f"Skipped page: {self.url} ({pagetype})")
             return []
         for tab in rdata["tab_menu"]:
             if tab["content_type"] == "playlist":
@@ -189,12 +214,16 @@ def main():
     parser.add_argument(
         "--film",
         help="Elabora il podcast anche se sembra un film.",
-        action="store_true",
+        action="append_const",
+        dest="types",
+        const="FILM",
     )
     parser.add_argument(
         "--programma",
         help="Elabora il podcast anche se sembra un programma radio/tv.",
-        action="store_true",
+        action="append_const",
+        dest="types",
+        const="PROGRAMMA",
     )
     parser.add_argument(
         "--dateok",
@@ -203,8 +232,9 @@ def main():
     )
 
     args = parser.parse_args()
+    types = ['GENERE'] + args.types
     parser = RaiParser(args.url, args.folder)
-    parser.process(skip_programmi=not args.programma, skip_film=not args.film, date_ok=args.dateok)
+    parser.process(' '.join(types), date_ok=args.dateok)
 
 
 if __name__ == "__main__":
