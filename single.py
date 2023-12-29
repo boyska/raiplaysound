@@ -42,6 +42,7 @@ class PageTypes(enum.IntFlag):
     GENERE = enum.auto()
     PROGRAMMA = enum.auto()
     FILM = enum.auto()
+    SERIE = enum.auto()
 
     @classmethod
     def from_string(cls, typology: str):
@@ -51,6 +52,8 @@ class PageTypes(enum.IntFlag):
             ret |= cls.FILM
         elif typology in ("programmi radio", "informazione notiziari"):
             ret |= cls.PROGRAMMA
+        elif typology in ("serie audio"):
+            ret |= cls.SERIE
         else:
             ret |= cls.GENERE
         return ret
@@ -131,10 +134,10 @@ class RaiParser:
                 fitem._data[f"{NSITUNES}episode"] = item["episode"]
             feed.items.append(fitem)
 
-    def process(self, types: str='GENERE', date_ok=False) -> List[Feed]:
+    def process(self, types: list[str]=['GENERE'], date_ok=False) -> List[Feed]:
         wanted_types = functools.reduce(
                 lambda x,y : x|y,
-                (PageTypes[x] for x in types.split()))
+                (PageTypes[x] for x in types))
 
         result = requests.get(self.url + ".json")
         try:
@@ -145,9 +148,10 @@ class RaiParser:
         rdata = result.json()
         typology = rdata["podcast_info"].get("typology", "").lower()
         pagetype = PageTypes.from_string(typology)
-        if not pagetype & wanted_types:
-            print(f"Skipped page: {self.url} ({pagetype})")
-            return []
+        if not pagetype & PageTypes.SERIE:
+            if not pagetype & wanted_types:
+                print(f"Skipped page: {self.url} ({pagetype.name})")
+                return []
         for tab in rdata["tab_menu"]:
             if tab["content_type"] == "playlist":
                 self.extend(tab["weblink"])
@@ -212,18 +216,11 @@ def main():
         "-f", "--folder", help="Cartella in cui scrivere il RSS podcast.", default="."
     )
     parser.add_argument(
-        "--film",
-        help="Elabora il podcast anche se sembra un film.",
-        action="append_const",
+        "--tipi",
+        help="Specifica i tipi di podcast da scaricare; separa da virgola",
         dest="types",
-        const="FILM",
-    )
-    parser.add_argument(
-        "--programma",
-        help="Elabora il podcast anche se sembra un programma radio/tv.",
-        action="append_const",
-        dest="types",
-        const="PROGRAMMA",
+        type=lambda s: s.split(','),
+        default=['SERIE', 'GENERE'],
     )
     parser.add_argument(
         "--dateok",
@@ -232,9 +229,8 @@ def main():
     )
 
     args = parser.parse_args()
-    types = ['GENERE'] + args.types
     parser = RaiParser(args.url, args.folder)
-    parser.process(' '.join(types), date_ok=args.dateok)
+    parser.process(args.types, date_ok=args.dateok)
 
 
 if __name__ == "__main__":
