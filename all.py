@@ -11,9 +11,10 @@ GENERI_URL = "https://www.raiplaysound.it/generi"
 
 
 class RaiPlaySound:
-    def __init__(self, basedir: Path):
+    def __init__(self, basedir: Path, types: list[str]):
         self._seen_url = set()
         self._base_path = basedir
+        self.types = types
         makedirs(self._base_path, exist_ok=True)
 
     def parse_genere(self, url):
@@ -27,7 +28,7 @@ class RaiPlaySound:
                 continue
             parser = RaiParser(url, self._base_path)
             try:
-                parser.process()
+                parser.process(self.types)
                 self._seen_url.add(url)
             except Exception as e:
                 print(f"Error with {url}: {e}")
@@ -51,11 +52,18 @@ def main():
     parser = argparse.ArgumentParser(description="Crawls RaiPlaySound for RSSs")
     parser.add_argument(
         "-f", "--folder", default=Path("dist"), type=Path,
-	help="Cartella in cui scrivere il RSS podcast.",
+        help="Cartella in cui scrivere il RSS podcast.",
+    )
+    parser.add_argument(
+        "--tipi",
+        help="Specifica i tipi di podcast da scaricare; separa da virgola",
+        dest="types",
+        type=lambda s: s.split(','),
+        default=['SERIE', 'GENERE'],
     )
     args = parser.parse_args()
 
-    dumper = RaiPlaySound(basedir=args.folder)
+    dumper = RaiPlaySound(basedir=args.folder, types=args.types)
     dumper.parse_generi()
 
 
