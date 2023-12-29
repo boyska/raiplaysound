@@ -60,12 +60,15 @@ class PageTypes(enum.IntFlag):
 
 
 class RaiParser:
-    def __init__(self, url: str, folderPath: str) -> None:
+    def __init__(self, url: str, folderPath: str, recursive: bool = True) -> None:
         self.url = url
         self.folderPath = folderPath
         self.inner: List[Feed] = []
+        self.recursive = recursive
 
     def extend(self, url: str) -> None:
+        if not self.recursive:
+            return
         url = urljoin(self.url, url)
         if url == self.url:
             return
