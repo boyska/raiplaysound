@@ -207,8 +207,23 @@ class RaiParser:
             print(f"Written {filename}")
         return [feed] + self.inner
 
+
+
+def UmaskNamedTemporaryFile(*args, **kargs):
+    fdesc = tempfile.NamedTemporaryFile(*args, **kargs)
+    # we need to set umask to get its current value. As noted
+    # by Florian Brucker (comment), this is a potential security
+    # issue, as it affects all the threads. Considering that it is
+    # less a problem to create a file with permissions 000 than 666,
+    # we use 666 as the umask temporary value.
+    umask = os.umask(0o666)
+    os.umask(umask)
+    os.chmod(fdesc.name, 0o666 & ~umask)
+    return fdesc
+
+
 def atomic_write(filename, content: str, update_time: Optional[dt] = None):
-    tmp = tempfile.NamedTemporaryFile(mode='w', encoding='utf8', delete=False, dir=os.path.dirname(filename), prefix='.tmp-single-', suffix='.xml')
+    tmp = UmaskNamedTemporaryFile(mode='w', encoding='utf8', delete=False, dir=os.path.dirname(filename), prefix='.tmp-single-', suffix='.xml')
     tmp.write(content)
     tmp.close()
     if update_time is not None:
