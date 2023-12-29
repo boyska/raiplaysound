@@ -1,5 +1,6 @@
 from os import makedirs, path
 from urllib.parse import urljoin
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -10,9 +11,9 @@ GENERI_URL = "https://www.raiplaysound.it/generi"
 
 
 class RaiPlaySound:
-    def __init__(self):
+    def __init__(self, basedir: Path):
         self._seen_url = set()
-        self._base_path = path.join(path.dirname(path.abspath(__file__)), "dist")
+        self._base_path = basedir
         makedirs(self._base_path, exist_ok=True)
 
     def parse_genere(self, url):
@@ -45,7 +46,16 @@ class RaiPlaySound:
 
 
 def main():
-    dumper = RaiPlaySound()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Crawls RaiPlaySound for RSSs")
+    parser.add_argument(
+        "-f", "--folder", default=Path("dist"), type=Path,
+	help="Cartella in cui scrivere il RSS podcast.",
+    )
+    args = parser.parse_args()
+
+    dumper = RaiPlaySound(basedir=args.folder)
     dumper.parse_generi()
 
 
