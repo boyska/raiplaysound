@@ -218,6 +218,7 @@ def main():
     parser.add_argument(
         "-f", "--folder", help="Cartella in cui scrivere il RSS podcast.", default="."
     )
+    parser.add_argument("--recursive", action='store_true', default=False, dest='recursive')
     parser.add_argument(
         "--tipi",
         help="Specifica i tipi di podcast da scaricare; separa da virgola",
@@ -232,7 +233,7 @@ def main():
     )
 
     args = parser.parse_args()
-    parser = RaiParser(args.url, args.folder)
+    parser = RaiParser(args.url, args.folder, recursive=args.recursive)
     parser.process(args.types, date_ok=args.dateok)
 
 
