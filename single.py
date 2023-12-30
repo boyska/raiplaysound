@@ -246,19 +246,10 @@ def atomic_write(filename, content: str, update_time: Optional[dt] = None):
         os.utime(tmp.name, (timestamp, timestamp))
     os.replace(tmp.name, filename)
 
-
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Genera un RSS da un programma di RaiPlaySound.",
-        epilog="Info su https://github.com/timendum/raiplaysound/",
-    )
-    parser.add_argument("url", help="URL di un podcast (o playlist) su raiplaysound.")
+def add_arguments(parser):
     parser.add_argument(
         "-f", "--folder", help="Cartella in cui scrivere il RSS podcast.", default="."
     )
-    parser.add_argument("--recursive", action='store_true', default=False, dest='recursive')
     parser.add_argument(
         "--tipi",
         help="Specifica i tipi di podcast da scaricare; separa da virgola",
@@ -280,7 +271,17 @@ def main():
     )
 
 
-    get_session(per_minute=1)
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Genera un RSS da un programma di RaiPlaySound.",
+        epilog="Info su https://github.com/timendum/raiplaysound/",
+    )
+    add_arguments(parser)
+    parser.add_argument("--recursive", action='store_true', default=False, dest='recursive')
+    parser.add_argument("url", help="URL di un podcast (o playlist) su raiplaysound.")
+
     args = parser.parse_args()
     parser = RaiParser(args.url, args.folder, recursive=args.recursive)
     parser.process(args.types, date_ok=args.dateok)

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from single import RaiParser, get_session
+from single import RaiParser, get_session, add_arguments
 
 GENERI_URL = "https://www.raiplaysound.it/generi"
 
@@ -49,22 +49,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Crawls RaiPlaySound for RSSs")
-    parser.add_argument(
-        "-f", "--folder", default=Path("dist"), type=Path,
-        help="Cartella in cui scrivere il RSS podcast.",
-    )
-    parser.add_argument(
-        "--tipi",
-        help="Specifica i tipi di podcast da scaricare; separa da virgola",
-        dest="types",
-        type=lambda s: s.split(','),
-        default=['SERIE', 'GENERE'],
-    )
-    parser.add_argument(
-        "--rate", type=float, metavar='R',
-        help='Ratelimit to R requests per minute',
-        default=-1,
-        )
+    add_arguments(parser)
+
     args = parser.parse_args()
     get_session(per_minute=args.rate)
 
