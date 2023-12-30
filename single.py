@@ -289,12 +289,18 @@ def main():
     )
     add_arguments(parser)
     parser.add_argument("--recursive", action='store_true', default=False, dest='recursive')
-    parser.add_argument("url", help="URL di un podcast (o playlist) su raiplaysound.")
+    parser.add_argument("urls",
+            metavar="URL",
+            nargs='+',
+            help="URL di un podcast (o playlist) su raiplaysound.",
+            )
 
     args = parser.parse_args()
     logging.basicConfig(level=args.log_level)
-    parser = RaiParser(args.url, args.folder, recursive=args.recursive)
-    parser.process(args.types, date_ok=args.dateok)
+
+    for url in args.urls:
+        parser = RaiParser(url, args.folder, recursive=args.recursive)
+        parser.process(args.types, date_ok=args.dateok)
 
 
 if __name__ == "__main__":
