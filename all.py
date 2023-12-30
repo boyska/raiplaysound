@@ -1,6 +1,7 @@
 from os import makedirs, path
 from urllib.parse import urljoin
 from pathlib import Path
+import logging
 
 from bs4 import BeautifulSoup
 
@@ -52,7 +53,7 @@ def main():
     add_arguments(parser)
 
     args = parser.parse_args()
-    get_session(per_minute=args.rate)
+    logging.basicConfig(level=args.log_level)
 
     dumper = RaiPlaySound(basedir=args.folder, types=args.types)
     dumper.parse_generi()

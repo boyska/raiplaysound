@@ -8,6 +8,8 @@ from urllib.parse import urljoin
 import tempfile
 import enum
 import functools
+import argparse
+import logging
 
 import requests
 from feedendum import to_rss_string, Feed, FeedItem
@@ -269,10 +271,17 @@ def add_arguments(parser):
         help='Ratelimit to R requests per minute',
         default=-1,
     )
+    parser.add_argument(
+        "--log-level",
+        metavar='R',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        help='Ratelimit to R requests per minute',
+        default='WARNING',
+    )
+
 
 
 def main():
-    import argparse
 
     parser = argparse.ArgumentParser(
         description="Genera un RSS da un programma di RaiPlaySound.",
@@ -283,6 +292,7 @@ def main():
     parser.add_argument("url", help="URL di un podcast (o playlist) su raiplaysound.")
 
     args = parser.parse_args()
+    logging.basicConfig(level=args.log_level)
     parser = RaiParser(args.url, args.folder, recursive=args.recursive)
     parser.process(args.types, date_ok=args.dateok)
 
