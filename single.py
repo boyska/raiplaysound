@@ -36,6 +36,21 @@ def _datetime_parser(s: str) -> Optional[dt]:
         pass
     return None
 
+from requests_ratelimiter import LimiterAdapter
+
+def get_session(**ratelimiter_args):
+    if get_session._cached_session is not None:
+        return get_session._cached_session 
+    s = requests.Session()
+    if ratelimiter_args:
+        adapter = LimiterAdapter(**ratelimiter_args)
+        s.mount('https://', adapter)
+        s.mount('http://', adapter)
+    get_session._cached_session  = s
+    return s
+get_session._cached_session = None
+
+
 
 class PageTypes(enum.IntFlag):
     """
@@ -144,7 +159,7 @@ class RaiParser:
                 lambda x,y : x|y,
                 (PageTypes[x] for x in types))
 
-        result = requests.get(self.url + ".json")
+        result = get_session().get(self.url + ".json")
         try:
             result.raise_for_status()
         except requests.HTTPError as e:
@@ -256,7 +271,16 @@ def main():
         help="Lascia inalterata la data di pubblicazione degli episodi.",
         action="store_true",
     )
+    parser.add_argument(
+        "--rate",
+        metavar='R',
+        type=lambda r: get_session(per_minute=float(r)),
+        help='Ratelimit to R requests per minute',
+        default=-1,
+    )
 
+
+    get_session(per_minute=1)
     args = parser.parse_args()
     parser = RaiParser(args.url, args.folder, recursive=args.recursive)
     parser.process(args.types, date_ok=args.dateok)

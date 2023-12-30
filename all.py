@@ -2,10 +2,9 @@ from os import makedirs, path
 from urllib.parse import urljoin
 from pathlib import Path
 
-import requests
 from bs4 import BeautifulSoup
 
-from single import RaiParser
+from single import RaiParser, get_session
 
 GENERI_URL = "https://www.raiplaysound.it/generi"
 
@@ -18,7 +17,7 @@ class RaiPlaySound:
         makedirs(self._base_path, exist_ok=True)
 
     def parse_genere(self, url):
-        result = requests.get(url)
+        result = get_session().get(url)
         result.raise_for_status()
         soup = BeautifulSoup(result.content, "html.parser")
         elements = soup.find_all("article")
@@ -34,7 +33,7 @@ class RaiPlaySound:
                 print(f"Error with {url}: {e}")
 
     def parse_generi(self) -> None:
-        result = requests.get(GENERI_URL)
+        result = get_session().get(GENERI_URL)
         result.raise_for_status()
         soup = BeautifulSoup(result.content, "html.parser")
         elements = soup.find_all("a", class_="block")
@@ -61,7 +60,13 @@ def main():
         type=lambda s: s.split(','),
         default=['SERIE', 'GENERE'],
     )
+    parser.add_argument(
+        "--rate", type=float, metavar='R',
+        help='Ratelimit to R requests per minute',
+        default=-1,
+        )
     args = parser.parse_args()
+    get_session(per_minute=args.rate)
 
     dumper = RaiPlaySound(basedir=args.folder, types=args.types)
     dumper.parse_generi()
