@@ -1,2 +1,4 @@
 dist
 *.xml
+.*.sw[po]
+__pycache__/
